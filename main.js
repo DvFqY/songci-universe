@@ -13,15 +13,15 @@ let mouseX = 0, mouseY = 0;
 const landingOverlay = document.getElementById('landing-overlay');
 const universeUI = document.getElementById('universe-ui');
 const poemModal = document.getElementById('poem-modal');
-const starCount = document.getElementById('starCount');
 const toast = document.getElementById('toast');
 
 // ===== INIT =====
 function initScene() {
   const container = document.getElementById('universe-container');
   scene = new THREE.Scene();
+
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.z = 35;
+  camera.position.set(0, 0, 35);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -48,6 +48,7 @@ function initScene() {
   raycaster = new THREE.Raycaster();
   pointer = new THREE.Vector2();
 }
+
 // ===== FIRST-VERSION PARTICLE UNIVERSE =====
 function createParticleUniverse() {
   // Layer 1: Main spherical particles (3000)
@@ -113,6 +114,7 @@ function createParticleUniverse() {
   glowParticles = new THREE.Points(geo2, mat2);
   scene.add(glowParticles);
 }
+
 // ===== CREATE POEM STARS =====
 function createPoemStars() {
   const starColors = [0x6366f1, 0xa855f7, 0xec4899, 0xf59e0b, 0x34d399, 0x60a5fa, 0xf472b6, 0x818cf8];
@@ -174,6 +176,7 @@ function createPoemStars() {
     scene.add(label);
   });
 }
+
 // ===== ENTRY =====
 function enterUniverse() {
   if (isTransitioning || entered) return;
@@ -213,13 +216,8 @@ function onPointerMove(event) {
   const intersects = raycaster.intersectObjects(starMeshes);
   renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
 
-  // Reset previous hover
   if (selectedStar && selectedStar !== (intersects.length > 0 ? intersects[0].object : null)) {
     selectedStar.userData.hoverScale = 1;
-    if (selectedStar.userData.labelEl) {
-      selectedStar.userData.labelEl.style.opacity = '0.5';
-      selectedStar.userData.labelEl.style.color = selectedStar.userData.labelOrigColor;
-    }
   }
 
   if (intersects.length > 0) {
@@ -286,7 +284,6 @@ function animate() {
   requestAnimationFrame(animate);
   const time = Date.now() * 0.001;
 
-  // Mouse parallax on particle systems
   if (bgParticles) {
     bgParticles.rotation.x += (mouseY * 0.12 - bgParticles.rotation.x) * 0.02;
     bgParticles.rotation.y += (mouseX * 0.12 - bgParticles.rotation.y) * 0.02;
@@ -295,7 +292,6 @@ function animate() {
     glowParticles.rotation.y += 0.0003;
   }
 
-  // Pulse & hover poem stars
   starMeshes.forEach(sprite => {
     if (sprite.userData.isPoemStar) {
       const pulse = 0.85 + 0.15 * Math.sin(time * 1.5 + sprite.userData.pulseOffset);

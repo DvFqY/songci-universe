@@ -27,7 +27,7 @@ a { text-decoration: none; color: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, rgba(10,10,30,0.2) 0%, #05050a 60%);
+  background: radial-gradient(ellipse at center, rgba(10,10,30,0.1) 0%, rgba(5,5,10,0.4) 100%);
   cursor: pointer;
   transition: opacity 1.2s ease, transform 1.2s ease;
 }
@@ -42,26 +42,27 @@ a { text-decoration: none; color: inherit; }
 }
 .landing-title {
   font-family: 'Ma Shan Zheng', cursive;
-  font-size: clamp(4rem, 12vw, 9rem);
-  color: #fff;
-  text-shadow:
-    0 0 40px rgba(168,85,247,0.3),
-    0 0 80px rgba(99,102,241,0.15),
-    0 0 120px rgba(168,85,247,0.08);
-  letter-spacing: 12px;
-  animation: titleGlow 3s ease-in-out infinite alternate;
+  font-size: clamp(4.5rem, 14vw, 10rem);
+  background: linear-gradient(135deg, #e0e0ff 0%, #a78bfa 30%, #6366f1 60%, #a855f7 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradShift 4s ease-in-out infinite;
+  letter-spacing: 16px;
+  text-shadow: none;
+  filter: drop-shadow(0 0 40px rgba(168,85,247,0.3)) drop-shadow(0 0 80px rgba(99,102,241,0.15));
   user-select: none;
 }
-@keyframes titleGlow {
-  0% { text-shadow: 0 0 40px rgba(168,85,247,0.3), 0 0 80px rgba(99,102,241,0.15); }
-  100% { text-shadow: 0 0 60px rgba(168,85,247,0.5), 0 0 120px rgba(99,102,241,0.25), 0 0 180px rgba(168,85,247,0.1); }
+@keyframes gradShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 .landing-hint {
   font-family: 'Exo 2', sans-serif;
   font-size: 0.75rem;
-  letter-spacing: 4px;
-  color: rgba(255,255,255,0.25);
-  margin-top: 24px;
+  letter-spacing: 6px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 28px;
   animation: hintPulse 2s ease-in-out infinite;
   user-select: none;
 }
@@ -134,8 +135,8 @@ a { text-decoration: none; color: inherit; }
 .modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
   animation: fadeIn 0.4s ease;
 }
 @keyframes fadeIn {
