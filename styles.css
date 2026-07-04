@@ -4,7 +4,7 @@ html, body {
   overflow: hidden;
   background: #05050a;
   color: #fff;
-  font-family: 'Noto Serif SC', 'ZCOOL XiaoWei', serif;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
 }
 .hidden { display: none !important; }
 
@@ -15,14 +15,14 @@ html, body {
 }
 #universe-container canvas { display: block; }
 
-/* ===== LANDING — 近乎透明 overlay ===== */
+/* ===== LANDING ===== */
 #landing-overlay {
   position: fixed; inset: 0;
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, rgba(10,10,30,0.05) 0%, rgba(5,5,10,0.15) 100%);
+  background: radial-gradient(ellipse at center, rgba(10,10,30,0.03) 0%, rgba(5,5,10,0.1) 100%);
   cursor: pointer;
   transition: opacity 1.2s ease, transform 1.2s ease;
 }
@@ -34,7 +34,7 @@ html, body {
 .landing-content { text-align: center; z-index: 2; }
 
 .landing-title {
-  font-family: 'Zhi Mang Xing', cursive;
+  font-family: 'STXingkai', 'KaiTi', 'STKaiti', 'Microsoft YaHei', cursive;
   font-size: clamp(5rem, 16vw, 11rem);
   font-weight: 400;
   background: linear-gradient(135deg, #e8e0ff 0%, #a78bfa 25%, #818cf8 50%, #c084fc 75%, #e8e0ff 100%);
@@ -54,7 +54,7 @@ html, body {
 }
 
 .landing-hint {
-  font-family: 'Exo 2', sans-serif;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
   font-size: 0.8rem;
   letter-spacing: 8px;
   color: rgba(255,255,255,0.25);
@@ -82,13 +82,13 @@ html, body {
   pointer-events: auto;
 }
 .ui-logo {
-  font-family: 'Zhi Mang Xing', cursive;
+  font-family: 'STXingkai', 'KaiTi', 'STKaiti', cursive;
   font-size: 1.3rem;
   letter-spacing: 4px;
   color: rgba(255,255,255,0.45);
 }
 .ui-btn {
-  font-family: 'Exo 2', sans-serif;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
   font-size: 0.7rem;
   letter-spacing: 2px;
   padding: 8px 20px;
@@ -109,7 +109,7 @@ html, body {
   bottom: 32px;
   left: 50%;
   transform: translateX(-50%);
-  font-family: 'Exo 2', sans-serif;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
   font-size: 0.65rem;
   letter-spacing: 3px;
   color: rgba(255,255,255,0.15);
@@ -178,7 +178,7 @@ html, body {
 .modal-body { padding: 36px 40px 48px; text-align: center; }
 
 .poem-intro {
-  font-family: 'ZCOOL XiaoWei', serif;
+  font-family: 'KaiTi', 'STKaiti', serif;
   font-size: 0.85rem;
   color: rgba(168,85,247,0.45);
   letter-spacing: 3px;
@@ -186,7 +186,7 @@ html, body {
   line-height: 1.6;
 }
 .poem-title {
-  font-family: 'Zhi Mang Xing', cursive;
+  font-family: 'STXingkai', 'KaiTi', 'STKaiti', cursive;
   font-size: clamp(2.4rem, 5vw, 3.4rem);
   color: #fff;
   margin-bottom: 8px;
@@ -195,7 +195,7 @@ html, body {
   text-shadow: 0 0 40px rgba(168,85,247,0.12);
 }
 .poem-author-line {
-  font-family: 'ZCOOL XiaoWei', serif;
+  font-family: 'KaiTi', 'STKaiti', serif;
   font-size: 0.9rem;
   color: rgba(255,255,255,0.35);
   letter-spacing: 4px;
@@ -212,7 +212,7 @@ html, body {
   font-size: 0.5rem;
 }
 .poem-text {
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'KaiTi', 'STKaiti', 'SimSun', serif;
   font-size: clamp(1rem, 2.5vw, 1.2rem);
   line-height: 2.4;
   color: rgba(255,255,255,0.8);
@@ -226,7 +226,7 @@ html, body {
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   z-index: 50;
-  font-family: 'ZCOOL XiaoWei', serif;
+  font-family: 'KaiTi', 'STKaiti', serif;
   font-size: 1.1rem;
   color: rgba(255,255,255,0.4);
   background: rgba(0,0,0,0.4);
