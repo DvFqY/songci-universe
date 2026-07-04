@@ -2,42 +2,30 @@
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-// ===== STATE =====
 let entered = false;
 let scene, camera, renderer, labelRenderer, controls;
-let starMeshes = [];
+let starMeshes = [], bgParticles, glowParticles;
 let raycaster, pointer;
 let selectedStar = null;
 let isTransitioning = false;
-let targetCamPos = null;
-let camAnimating = false;
-let camAnimStart = null;
-let camAnimDuration = 1.5;
+let mouseX = 0, mouseY = 0;
 
-// ===== DOM REFS =====
 const landingOverlay = document.getElementById('landing-overlay');
 const universeUI = document.getElementById('universe-ui');
 const poemModal = document.getElementById('poem-modal');
 const starCount = document.getElementById('starCount');
 const toast = document.getElementById('toast');
 
-// ===== INIT THREE.JS =====
+// ===== INIT =====
 function initScene() {
   const container = document.getElementById('universe-container');
-
   scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 35;
 
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-  camera.position.set(0, 5, 25);
-
-  renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    alpha: true
-  });
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
   container.appendChild(renderer.domElement);
 
   labelRenderer = new CSS2DRenderer();
@@ -50,241 +38,203 @@ function initScene() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.minDistance = 8;
+  controls.minDistance = 12;
   controls.maxDistance = 60;
   controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.5;
+  controls.autoRotateSpeed = 0.4;
   controls.target.set(0, 0, 0);
   controls.update();
 
   raycaster = new THREE.Raycaster();
   pointer = new THREE.Vector2();
 }
+// ===== FIRST-VERSION PARTICLE UNIVERSE =====
+function createParticleUniverse() {
+  // Layer 1: Main spherical particles (3000)
+  const count = 3000;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+  const color1 = new THREE.Color(0x6366f1);
+  const color2 = new THREE.Color(0xa855f7);
+  const color3 = new THREE.Color(0xec4899);
 
-// ===== CREATE UNIVERSE =====
-function createUniverse() {
-  // Ambient light
-  const ambient = new THREE.AmbientLight(0x222244, 0.5);
-  scene.add(ambient);
-
-  // Point light
-  const light = new THREE.PointLight(0x8888ff, 1, 100);
-  light.position.set(0, 10, 20);
-  scene.add(light);
-
-  // Background nebula particles
-  const bgCount = 8000;
-  const bgGeo = new THREE.BufferGeometry();
-  const bgPos = new Float32Array(bgCount * 3);
-  const bgColors = new Float32Array(bgCount * 3);
-  const bgSizes = new Float32Array(bgCount);
-
-  for (let i = 0; i < bgCount; i++) {
-    const r = 50 + Math.random() * 150;
+  for (let i = 0; i < count; i++) {
+    const radius = 20 + Math.random() * 30;
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos(2 * Math.random() - 1);
-    bgPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
-    bgPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-    bgPos[i*3+2] = r * Math.cos(phi);
-
-    const c = new THREE.Color().setHSL(0.65 + Math.random() * 0.15, 0.5, 0.3 + Math.random() * 0.3);
-    bgColors[i*3] = c.r; bgColors[i*3+1] = c.g; bgColors[i*3+2] = c.b;
-    bgSizes[i] = 0.3 + Math.random() * 0.8;
+    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+    positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+    positions[i * 3 + 2] = radius * Math.cos(phi);
+    const color = Math.random() > 0.5
+      ? color1.clone().lerp(color2, Math.random())
+      : color2.clone().lerp(color3, Math.random());
+    colors[i * 3] = color.r; colors[i * 3 + 1] = color.g; colors[i * 3 + 2] = color.b;
+    sizes[i] = 0.1 + Math.random() * 0.4;
   }
-  bgGeo.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
-  bgGeo.setAttribute('color', new THREE.BufferAttribute(bgColors, 3));
-  bgGeo.setAttribute('size', new THREE.BufferAttribute(bgSizes, 1));
 
-  const bgMat = new THREE.PointsMaterial({
-    size: 0.5,
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.6,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    sizeAttenuation: true
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  const texCanvas = document.createElement('canvas');
+  texCanvas.width = 64; texCanvas.height = 64;
+  const ctx = texCanvas.getContext('2d');
+  const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.3, 'rgba(255,255,255,0.8)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64);
+  const texture = new THREE.CanvasTexture(texCanvas);
+
+  const material = new THREE.PointsMaterial({
+    size: 0.25, map: texture, blending: THREE.AdditiveBlending,
+    depthWrite: false, transparent: true, vertexColors: true,
+    opacity: 0.8, sizeAttenuation: true
   });
-  const bgParticles = new THREE.Points(bgGeo, bgMat);
+  bgParticles = new THREE.Points(geometry, material);
   scene.add(bgParticles);
 
-  // Inner glow particles
-  const glowCount = 2000;
-  const glowGeo = new THREE.BufferGeometry();
-  const glowPos = new Float32Array(glowCount * 3);
-  for (let i = 0; i < glowCount; i++) {
-    const r = 5 + Math.random() * 30;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    glowPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
-    glowPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-    glowPos[i*3+2] = r * Math.cos(phi);
+  // Layer 2: Tiny background dust (1500)
+  const count2 = 1500;
+  const pos2 = new Float32Array(count2 * 3);
+  for (let i = 0; i < count2; i++) {
+    pos2[i * 3] = (Math.random() - 0.5) * 80;
+    pos2[i * 3 + 1] = (Math.random() - 0.5) * 80;
+    pos2[i * 3 + 2] = (Math.random() - 0.5) * 40 - 10;
   }
-  glowGeo.setAttribute('position', new THREE.BufferAttribute(glowPos, 3));
-  const glowMat = new THREE.PointsMaterial({
-    size: 0.08,
-    color: 0x8888ff,
-    transparent: true,
-    opacity: 0.3,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    sizeAttenuation: true
+  const geo2 = new THREE.BufferGeometry();
+  geo2.setAttribute('position', new THREE.BufferAttribute(pos2, 3));
+  const mat2 = new THREE.PointsMaterial({
+    size: 0.08, color: 0x6366f1, transparent: true, opacity: 0.25,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
   });
-  const glowParticles = new THREE.Points(glowGeo, glowMat);
+  glowParticles = new THREE.Points(geo2, mat2);
   scene.add(glowParticles);
-
-  // Central glow
-  const glowSphere = new THREE.Mesh(
-    new THREE.SphereGeometry(2, 32, 32),
-    new THREE.MeshBasicMaterial({
-      color: 0x4444aa,
-      transparent: true,
-      opacity: 0.08,
-      blending: THREE.AdditiveBlending
-    })
-  );
-  scene.add(glowSphere);
-
-  // ===== CREATE POEM STARS =====
+}
+// ===== CREATE POEM STARS =====
+function createPoemStars() {
   const starColors = [0x6366f1, 0xa855f7, 0xec4899, 0xf59e0b, 0x34d399, 0x60a5fa, 0xf472b6, 0x818cf8];
 
   POEMS.forEach((poem, i) => {
-    const radius = 8 + Math.random() * 12;
+    const radius = 10 + Math.random() * 12;
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos(2 * Math.random() - 1);
-
     const x = radius * Math.sin(phi) * Math.cos(theta);
     const y = radius * Math.sin(phi) * Math.sin(theta);
     const z = radius * Math.cos(phi);
 
-    // Star glow sprite
-    const spriteCanvas = document.createElement('canvas');
-    spriteCanvas.width = 128;
-    spriteCanvas.height = 128;
-    const ctx = spriteCanvas.getContext('2d');
-
     const color = new THREE.Color(starColors[i % starColors.length]);
-    const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    gradient.addColorStop(0, `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},1)`);
-    gradient.addColorStop(0.2, `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},0.8)`);
-    gradient.addColorStop(0.5, `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},0.3)`);
-    gradient.addColorStop(1, `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},0)`);
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(64, 64, 64, 0, Math.PI * 2);
-    ctx.fill();
 
-    // Cross flare
-    ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},0.3)`;
-    ctx.fillRect(56, 20, 16, 88);
-    ctx.fillRect(20, 56, 88, 16);
-    ctx.globalCompositeOperation = 'source-over';
+    // Star sprite with glow
+    const canvas = document.createElement('canvas');
+    canvas.width = 96; canvas.height = 96;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(48, 48, 0, 48, 48, 48);
+    grad.addColorStop(0, `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},1)`);
+    grad.addColorStop(0.15, `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},0.7)`);
+    grad.addColorStop(0.4, `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},0.2)`);
+    grad.addColorStop(1, `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(48, 48, 48, 0, Math.PI * 2); ctx.fill();
 
-    const texture = new THREE.CanvasTexture(spriteCanvas);
+    const texture = new THREE.CanvasTexture(canvas);
     const spriteMat = new THREE.SpriteMaterial({
-      map: texture,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      transparent: true,
-      opacity: 0.9
+      map: texture, blending: THREE.AdditiveBlending,
+      depthWrite: false, transparent: true, opacity: 0.85
     });
     const sprite = new THREE.Sprite(spriteMat);
-    const size = 0.8 + Math.random() * 0.6;
+    const size = 0.7 + Math.random() * 0.5;
     sprite.scale.set(size, size, 1);
     sprite.position.set(x, y, z);
-    sprite.userData = { poem, isPoemStar: true, baseSize: size, pulseOffset: Math.random() * Math.PI * 2 };
+    sprite.userData = {
+      poem, isPoemStar: true, baseSize: size,
+      pulseOffset: Math.random() * Math.PI * 2,
+      hoverScale: 1
+    };
     scene.add(sprite);
     starMeshes.push(sprite);
 
-    // Label
+    // CSS2D label
     const labelDiv = document.createElement('div');
     labelDiv.textContent = poem.title;
-    labelDiv.style.color = `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},0.7)`;
+    labelDiv.style.color = `rgba(${color.r*255|0},${color.g*255|0},${color.b*255|0},0.5)`;
     labelDiv.style.fontFamily = "'Ma Shan Zheng', cursive";
-    labelDiv.style.fontSize = '14px';
-    labelDiv.style.textShadow = '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)';
+    labelDiv.style.fontSize = '13px';
+    labelDiv.style.textShadow = '0 0 12px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.5)';
     labelDiv.style.letterSpacing = '2px';
     labelDiv.style.whiteSpace = 'nowrap';
     labelDiv.style.pointerEvents = 'none';
-    labelDiv.style.transition = 'opacity 0.3s';
+    labelDiv.style.transition = 'opacity 0.3s, color 0.3s';
+    labelDiv.style.opacity = '0.5';
 
     const label = new CSS2DObject(labelDiv);
-    label.position.set(x, y - size * 0.8, z);
+    label.position.set(x, y - size * 0.9, z);
     scene.add(label);
   });
 }
-
-// ===== RAYCASTER INTERACTION =====
-function onPointerDown(event) {
-  if (!entered || isTransitioning) return;
-
-  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(pointer, camera);
-
-  const intersects = raycaster.intersectObjects(starMeshes);
-
-  if (intersects.length > 0) {
-    const hit = intersects[0].object;
-    if (hit.userData.isPoemStar) {
-      controls.autoRotate = false;
-      openPoem(hit.userData.poem);
-    }
-  }
-}
-
-function onPointerMove(event) {
-  if (!entered) return;
-
-  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(pointer, camera);
-  const intersects = raycaster.intersectObjects(starMeshes);
-
-  renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
-
-  if (selectedStar && selectedStar !== (intersects.length > 0 ? intersects[0].object : null)) {
-    const prev = selectedStar;
-    prev.userData.hoverScale = 1;
-  }
-
-  if (intersects.length > 0) {
-    selectedStar = intersects[0].object;
-    selectedStar.userData.hoverScale = 1.8;
-  } else {
-    selectedStar = null;
-  }
-}
-
-// ===== LANDING ENTRY =====
+// ===== ENTRY =====
 function enterUniverse() {
-  if (isTransitioning) return;
+  if (isTransitioning || entered) return;
   isTransitioning = true;
-
   landingOverlay.classList.add('fade-out');
   universeUI.classList.remove('hidden');
-
   setTimeout(() => {
     landingOverlay.style.display = 'none';
     entered = true;
     isTransitioning = false;
     controls.autoRotate = true;
-    updateStarCount();
-    showToast('✦ 点击任意星辰，品读千年宋词');
-    setTimeout(() => hideToast(), 2500);
-  }, 1500);
+    showToast('✦ 点击星辰，品读宋词');
+    setTimeout(hideToast, 2000);
+  }, 1200);
 }
 
 landingOverlay.addEventListener('dblclick', enterUniverse);
+
+// ===== INTERACTION =====
+function onPointerDown(event) {
+  if (!entered || isTransitioning) return;
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const intersects = raycaster.intersectObjects(starMeshes);
+  if (intersects.length > 0 && intersects[0].object.userData.isPoemStar) {
+    controls.autoRotate = false;
+    openPoem(intersects[0].object.userData.poem);
+  }
+}
+
+function onPointerMove(event) {
+  if (!entered) return;
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const intersects = raycaster.intersectObjects(starMeshes);
+  renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+
+  // Reset previous hover
+  if (selectedStar && selectedStar !== (intersects.length > 0 ? intersects[0].object : null)) {
+    selectedStar.userData.hoverScale = 1;
+    if (selectedStar.userData.labelEl) {
+      selectedStar.userData.labelEl.style.opacity = '0.5';
+      selectedStar.userData.labelEl.style.color = selectedStar.userData.labelOrigColor;
+    }
+  }
+
+  if (intersects.length > 0) {
+    selectedStar = intersects[0].object;
+    selectedStar.userData.hoverScale = 2.2;
+  } else {
+    selectedStar = null;
+  }
+}
 
 // ===== POEM MODAL =====
 function openPoem(poem) {
   document.getElementById('poemIntro').textContent = poem.intro;
   document.getElementById('poemTitle').textContent = poem.title;
-  document.getElementById('poemAuthor').textContent = poem.author;
-  document.getElementById('poemDynasty').textContent = `—— ${poem.dynasty} · ${poem.author}`;
+  document.getElementById('poemAuthorLine').textContent = `—— ${poem.dynasty} · ${poem.author}`;
   document.getElementById('poemText').textContent = poem.text;
   poemModal.classList.remove('hidden');
 }
@@ -296,47 +246,28 @@ function closePoem() {
 
 document.getElementById('modalClose').addEventListener('click', closePoem);
 document.querySelector('.modal-backdrop').addEventListener('click', closePoem);
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closePoem();
-});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePoem(); });
 
-// ===== BACK BUTTON =====
+// ===== BACK =====
 document.getElementById('btnBack').addEventListener('click', () => {
   if (isTransitioning) return;
   isTransitioning = true;
   entered = false;
   controls.autoRotate = false;
-
   universeUI.classList.add('hidden');
   landingOverlay.style.display = 'flex';
   landingOverlay.classList.remove('fade-out');
-
-  // Animate camera back using lerp
-  targetCamPos = new THREE.Vector3(0, 5, 25);
-  camAnimating = true;
-  camAnimStart = performance.now();
-  camAnimDuration = 1500;
+  camera.position.set(0, 0, 35);
   controls.target.set(0, 0, 0);
+  controls.update();
+  isTransitioning = false;
 });
 
 // ===== TOAST =====
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.classList.remove('hidden');
-  toast.classList.add('show');
-}
-function hideToast() {
-  toast.classList.remove('show');
-  toast.classList.add('hidden');
-}
+function showToast(msg) { toast.textContent = msg; toast.classList.remove('hidden'); toast.classList.add('show'); }
+function hideToast() { toast.classList.remove('show'); toast.classList.add('hidden'); }
 
-// ===== STAR COUNT =====
-function updateStarCount() {
-  const discovered = parseInt(starCount.dataset.discovered || '0');
-  starCount.textContent = `✨ ${discovered} / ${POEMS.length} 颗诗星`;
-}
-
-// ===== WINDOW RESIZE =====
+// ===== RESIZE =====
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -344,36 +275,35 @@ window.addEventListener('resize', () => {
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// ===== MOUSE PARALLAX =====
+document.addEventListener('mousemove', (e) => {
+  mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+  mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+});
+
 // ===== ANIMATION LOOP =====
 function animate() {
   requestAnimationFrame(animate);
-
   const time = Date.now() * 0.001;
 
-  // Camera animation (lerp back)
-  if (camAnimating && targetCamPos) {
-    const elapsed = performance.now() - camAnimStart;
-    const t = Math.min(elapsed / camAnimDuration, 1);
-    // Smooth easeInOut
-    const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    camera.position.lerp(targetCamPos, ease * 0.08);
-    if (t >= 1) {
-      camera.position.copy(targetCamPos);
-      camAnimating = false;
-      targetCamPos = null;
-      isTransitioning = false;
-    }
+  // Mouse parallax on particle systems
+  if (bgParticles) {
+    bgParticles.rotation.x += (mouseY * 0.12 - bgParticles.rotation.x) * 0.02;
+    bgParticles.rotation.y += (mouseX * 0.12 - bgParticles.rotation.y) * 0.02;
+  }
+  if (glowParticles) {
+    glowParticles.rotation.y += 0.0003;
   }
 
-  // Pulse poem stars
+  // Pulse & hover poem stars
   starMeshes.forEach(sprite => {
     if (sprite.userData.isPoemStar) {
       const pulse = 0.85 + 0.15 * Math.sin(time * 1.5 + sprite.userData.pulseOffset);
       const hover = sprite.userData.hoverScale || 1;
-      const targetScale = sprite.userData.baseSize * pulse * hover;
-      sprite.scale.x += (targetScale - sprite.scale.x) * 0.1;
-      sprite.scale.y += (targetScale - sprite.scale.y) * 0.1;
-      sprite.material.opacity = 0.6 + 0.3 * Math.sin(time * 1.2 + sprite.userData.pulseOffset);
+      const target = sprite.userData.baseSize * pulse * hover;
+      sprite.scale.x += (target - sprite.scale.x) * 0.1;
+      sprite.scale.y += (target - sprite.scale.y) * 0.1;
+      sprite.material.opacity = 0.5 + 0.35 * Math.sin(time * 1.2 + sprite.userData.pulseOffset);
     }
   });
 
@@ -384,11 +314,10 @@ function animate() {
 
 // ===== INIT =====
 initScene();
-createUniverse();
+createParticleUniverse();
+createPoemStars();
 
-// Events
 renderer.domElement.addEventListener('pointerdown', onPointerDown);
 renderer.domElement.addEventListener('pointermove', onPointerMove);
 
-// Start
 animate();

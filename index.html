@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>宋词宇宙 — 星辰中的千年绝唱</title>
+<title>诗词宇宙</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;700;900&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;700&family=Righteous&display=swap" rel="stylesheet">
@@ -11,62 +11,37 @@
 </head>
 <body>
 
-<!-- ===== THREE.JS CANVAS CONTAINER ===== -->
 <div id="universe-container"></div>
 
-<!-- ===== LANDING OVERLAY ===== -->
 <div id="landing-overlay">
-  <div class="landing-stars-bg"></div>
   <div class="landing-content">
-    <div class="landing-badge">✦ 宋词宇宙</div>
-    <h1 class="landing-title">
-      <span class="title-cn">星辰中的千年绝唱</span>
-      <span class="title-en">COSMIC <span class="gradient-text">POETRY</span></span>
-    </h1>
-    <p class="landing-desc">三千大千世界，每一颗星辰都是一首不朽的宋词。<br>双击进入，穿越时空，与千古词人对话。</p>
-    <div class="landing-hint" id="landingHint">
-      <div class="hint-icon">☯</div>
-      <span>双击任意处进入宇宙</span>
-      <div class="hint-ripple"></div>
-    </div>
+    <h1 class="landing-title">诗词宇宙</h1>
+    <p class="landing-hint">双击打开</p>
   </div>
-  <div class="landing-footer">转动视角 · 点击星辰 · 品读宋词</div>
 </div>
 
-<!-- ===== UNIVERSE UI (visible after entry) ===== -->
 <div id="universe-ui" class="hidden">
   <div class="ui-top-bar">
-    <div class="ui-logo">✦ 宋词宇宙</div>
-    <div class="ui-controls">
-      <span class="control-hint">🖱 拖动旋转 · 滚轮缩放</span>
-      <button class="ui-btn" id="btnBack">← 返回</button>
-    </div>
+    <div class="ui-logo">✦ 诗词宇宙</div>
+    <button class="ui-btn" id="btnBack">← 返回</button>
   </div>
-  <div class="ui-star-count" id="starCount">✨ 0 颗诗星</div>
-  <div class="ui-hint" id="uiHint">点击发光的星辰，品读宋词</div>
+  <div class="ui-star-count" id="starCount">✨ 0 / 30 颗诗星</div>
 </div>
 
-<!-- ===== POEM MODAL ===== -->
 <div id="poem-modal" class="modal hidden">
   <div class="modal-backdrop"></div>
   <div class="modal-content">
     <button class="modal-close" id="modalClose">✕</button>
-    <div class="modal-scroll-top"></div>
     <div class="modal-body">
       <div class="poem-intro" id="poemIntro"></div>
       <h2 class="poem-title" id="poemTitle"></h2>
-      <div class="poem-author" id="poemAuthor"></div>
-      <div class="poem-dynasty" id="poemDynasty"></div>
-      <div class="poem-divider">
-        <span class="divider-dot">◆</span>
-      </div>
+      <div class="poem-author-line" id="poemAuthorLine"></div>
+      <div class="poem-divider"><span class="divider-dot">◇</span><span class="divider-dot">◇</span><span class="divider-dot">◇</span></div>
       <div class="poem-text" id="poemText"></div>
     </div>
-    <div class="modal-scroll-bottom"></div>
   </div>
 </div>
 
-<!-- ===== TOAST ===== -->
 <div id="toast" class="toast hidden"></div>
 
 <script type="importmap">
