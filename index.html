@@ -1,0 +1,249 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS — 超越想象</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:ital,wght@0,100;0,400;0,700;0,900;1,400&family=Noto+Sans+SC:wght@300;700;900&family=Righteous&family=Bangers&family=Monoton&family=Black+Ops+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+
+<div class="cursor-glow"></div>
+
+<nav class="navbar" id="navbar">
+  <div class="nav-logo">⚡ NEXUS</div>
+  <ul class="nav-links">
+    <li><a href="#hero" class="active">序章</a></li>
+    <li><a href="#about">关于</a></li>
+    <li><a href="#features">能力</a></li>
+    <li><a href="#showcase">作品</a></li>
+    <li><a href="#contact">联系</a></li>
+  </ul>
+  <div class="nav-toggle" id="navToggle">☰</div>
+</nav>
+
+<section class="hero" id="hero">
+  <div class="hero-bg-layer"></div>
+  <div class="hero-content">
+    <div class="hero-badge" data-reveal>✦ 2026 全新纪元</div>
+    <h1 class="hero-title" data-reveal>
+      <span class="title-line"><span class="gradient-text">NEXUS</span></span>
+      <span class="title-line"><span class="outline-text">超越</span><span class="glow-text">想象</span></span>
+      <span class="title-line sub">定义未来的数字体验</span>
+    </h1>
+    <p class="hero-desc" data-reveal>当艺术遇见科技，当创意突破边界。我们打造令人窒息的视觉盛宴。</p>
+    <div class="hero-actions" data-reveal>
+      <a href="#features" class="btn btn-primary">探索宇宙 <span>→</span></a>
+      <a href="#showcase" class="btn btn-outline">查看作品 <span>→</span></a>
+    </div>
+  </div>
+  <div class="scroll-indicator">
+    <div class="mouse">
+      <div class="wheel"></div>
+    </div>
+    <span>向下滚动</span>
+  </div>
+</section>
+
+<section class="section about" id="about">
+  <div class="section-bg">
+    <div class="grid-lines"></div>
+  </div>
+  <div class="container">
+    <div class="section-header" data-reveal>
+      <span class="section-number">01</span>
+      <h2 class="section-title">关于 <span class="gradient-text">NEXUS</span></h2>
+      <div class="section-divider">
+        <span class="divider-line"></span>
+        <span class="divider-diamond">◆</span>
+        <span class="divider-line"></span>
+      </div>
+    </div>
+    <div class="about-grid">
+      <div class="about-card" data-reveal data-delay="0">
+        <div class="card-icon">🚀</div>
+        <h3>极致性能</h3>
+        <p>采用最新 Web 技术栈，GPU 加速渲染，60fps 丝滑体验，让每一次交互都如呼吸般自然。</p>
+      </div>
+      <div class="about-card" data-reveal data-delay="150">
+        <div class="card-icon">🎨</div>
+        <h3>视觉革命</h3>
+        <p>融合 3D 粒子系统、动态渐变、视差滚动与流体动画，打造沉浸式数字艺术空间。</p>
+      </div>
+      <div class="about-card" data-reveal data-delay="300">
+        <div class="card-icon">⚡</div>
+        <h3>未来科技</h3>
+        <p>WebGL 加速、AI 驱动交互、自适应设计，让每一个像素都充满生命力。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section features" id="features">
+  <div class="container">
+    <div class="section-header" data-reveal>
+      <span class="section-number">02</span>
+      <h2 class="section-title">核心 <span class="outline-text">能力</span></h2>
+      <div class="section-divider">
+        <span class="divider-line"></span>
+        <span class="divider-diamond">◆</span>
+        <span class="divider-line"></span>
+      </div>
+    </div>
+    <div class="features-grid">
+      <div class="feature-item" data-reveal data-delay="0">
+        <div class="feature-number">01</div>
+        <div class="feature-content">
+          <h3>粒子宇宙</h3>
+          <p>数千个动态粒子实时渲染，构成浩瀚的数字星河</p>
+          <div class="feature-stats">
+            <span>10,000+ 粒子</span>
+            <span>60 FPS</span>
+          </div>
+        </div>
+      </div>
+      <div class="feature-item" data-reveal data-delay="100">
+        <div class="feature-number">02</div>
+        <div class="feature-content">
+          <h3>3D 视差</h3>
+          <p>多层次深度感知，鼠标移动间展现立体空间魅力</p>
+          <div class="feature-stats">
+            <span>6 图层</span>
+            <span>实时追踪</span>
+          </div>
+        </div>
+      </div>
+      <div class="feature-item" data-reveal data-delay="200">
+        <div class="feature-number">03</div>
+        <div class="feature-content">
+          <h3>流体过渡</h3>
+          <p>丝滑的滚动驱动动画，每个转场都如行云流水</p>
+          <div class="feature-stats">
+            <span>GSAP 驱动</span>
+            <span>贝塞尔曲线</span>
+          </div>
+        </div>
+      </div>
+      <div class="feature-item" data-reveal data-delay="300">
+        <div class="feature-number">04</div>
+        <div class="feature-content">
+          <h3>动态排版</h3>
+          <p>渐变文字、描边特效、发光字体，艺术与技术的完美融合</p>
+          <div class="feature-stats">
+            <span>7 种字体</span>
+            <span>CSS 魔法</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section showcase" id="showcase">
+  <div class="container">
+    <div class="section-header" data-reveal>
+      <span class="section-number">03</span>
+      <h2 class="section-title">精选 <span class="glow-text">作品</span></h2>
+      <div class="section-divider">
+        <span class="divider-line"></span>
+        <span class="divider-diamond">◆</span>
+        <span class="divider-line"></span>
+      </div>
+    </div>
+    <div class="showcase-grid">
+      <div class="showcase-item" data-reveal data-delay="0">
+        <div class="showcase-image">
+          <div class="showcase-placeholder" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24)">
+            <span class="showcase-emoji">🌌</span>
+          </div>
+          <div class="showcase-overlay">
+            <h4>银河画廊</h4>
+            <p>沉浸式 3D 宇宙探索体验</p>
+            <span class="showcase-tag">WebGL</span>
+          </div>
+        </div>
+      </div>
+      <div class="showcase-item" data-reveal data-delay="150">
+        <div class="showcase-image">
+          <div class="showcase-placeholder" style="background: linear-gradient(135deg, #a29bfe, #6c5ce7)">
+            <span class="showcase-emoji">🎵</span>
+          </div>
+          <div class="showcase-overlay">
+            <h4>声波律动</h4>
+            <p>音频可视化互动装置</p>
+            <span class="showcase-tag">Canvas</span>
+          </div>
+        </div>
+      </div>
+      <div class="showcase-item" data-reveal data-delay="300">
+        <div class="showcase-image">
+          <div class="showcase-placeholder" style="background: linear-gradient(135deg, #fdcb6e, #e17055)">
+            <span class="showcase-emoji">🤖</span>
+          </div>
+          <div class="showcase-overlay">
+            <h4>AI 梦境</h4>
+            <p>人工智能生成艺术展</p>
+            <span class="showcase-tag">AI</span>
+          </div>
+        </div>
+      </div>
+      <div class="showcase-item" data-reveal data-delay="450">
+        <div class="showcase-image">
+          <div class="showcase-placeholder" style="background: linear-gradient(135deg, #55efc4, #00b894)">
+            <span class="showcase-emoji">🌀</span>
+          </div>
+          <div class="showcase-overlay">
+            <h4>数据洪流</h4>
+            <p>实时大数据可视化看板</p>
+            <span class="showcase-tag">D3.js</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section contact" id="contact">
+  <div class="container">
+    <div class="section-header" data-reveal>
+      <span class="section-number">04</span>
+      <h2 class="section-title">联系 <span class="gradient-text">我们</span></h2>
+      <div class="section-divider">
+        <span class="divider-line"></span>
+        <span class="divider-diamond">◆</span>
+        <span class="divider-line"></span>
+      </div>
+    </div>
+    <div class="contact-content" data-reveal>
+      <p class="contact-text">准备好开启一段非凡的数字之旅了吗？</p>
+      <a href="mailto:hello@nexus.space" class="btn btn-primary btn-large">hello@nexus.space <span>✈</span></a>
+      <div class="social-links">
+        <a href="#" class="social-link">GitHub</a>
+        <a href="#" class="social-link">Twitter</a>
+        <a href="#" class="social-link">Dribbble</a>
+        <a href="#" class="social-link">Behance</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-content">
+      <div class="footer-logo">⚡ NEXUS</div>
+      <p class="footer-text">© 2026 NEXUS Studio. 用 ❤️ 和 ☕ 打造</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
