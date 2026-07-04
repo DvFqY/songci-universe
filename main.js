@@ -1,198 +1,222 @@
 ﻿// ===== STATE =====
 let entered = false;
-let scene, camera, renderer;
-let starMeshes = [], bgParticles, glowParticles;
-let raycaster, mouse;
-let selectedStar = null;
 let isTransitioning = false;
-let mouseX = 0, mouseY = 0;
 let autoRotate = true;
-let autoRotateAngle = 0;
+let mouseX = 0, mouseY = 0;
 
-const landingOverlay = document.getElementById('landing-overlay');
-const universeUI = document.getElementById('universe-ui');
-const poemModal = document.getElementById('poem-modal');
-const toast = document.getElementById('toast');
+// Canvas
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let W, H;
 
-// ===== SIMPLE ORBIT CONTROLS =====
-let camTheta = 0, camPhi = Math.PI / 3, camDist = 35;
-let targetTheta = 0, targetPhi = Math.PI / 3, targetDist = 35;
-let isDragging = false;
-let prevMouseX = 0, prevMouseY = 0;
+// ===== PARTICLES (3D spherical cloud) =====
+const particles = [];
+const PARTICLE_COUNT = 2500;
 
-function initScene() {
-  const container = document.getElementById('universe-container');
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  updateCameraPosition();
-
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  container.appendChild(renderer.domElement);
-
-  raycaster = new THREE.Raycaster();
-  mouse = new THREE.Vector2();
-
-  // Mouse drag for orbit
-  renderer.domElement.addEventListener('mousedown', (e) => {
-    if (!entered) return;
-    isDragging = true;
-    prevMouseX = e.clientX;
-    prevMouseY = e.clientY;
-    autoRotate = false;
-  });
-
-  document.addEventListener('mousemove', (e) => {
-    if (!entered) return;
-    mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-    mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-
-    if (isDragging) {
-      const dx = e.clientX - prevMouseX;
-      const dy = e.clientY - prevMouseY;
-      targetTheta -= dx * 0.005;
-      targetPhi = Math.max(0.1, Math.min(Math.PI - 0.1, targetPhi + dy * 0.005));
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
-    }
-  });
-
-  document.addEventListener('mouseup', () => {
-    isDragging = false;
-  });
-
-  // Scroll to zoom
-  renderer.domElement.addEventListener('wheel', (e) => {
-    if (!entered) return;
-    targetDist = Math.max(12, Math.min(60, targetDist + e.deltaY * 0.02));
-  });
-}
-
-function updateCameraPosition() {
-  camTheta += (targetTheta - camTheta) * 0.08;
-  camPhi += (targetPhi - camPhi) * 0.08;
-  camDist += (targetDist - camDist) * 0.08;
-
-  camera.position.x = camDist * Math.sin(camPhi) * Math.cos(camTheta);
-  camera.position.y = camDist * Math.cos(camPhi);
-  camera.position.z = camDist * Math.sin(camPhi) * Math.sin(camTheta);
-  camera.lookAt(0, 0, 0);
-}
-
-// ===== PARTICLE UNIVERSE (First Version) =====
-function createParticleUniverse() {
-  // Layer 1: Main spherical particles (3000)
-  const count = 3000;
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  const sizes = new Float32Array(count);
-  const color1 = new THREE.Color(0x6366f1);
-  const color2 = new THREE.Color(0xa855f7);
-  const color3 = new THREE.Color(0xec4899);
-
-  for (let i = 0; i < count; i++) {
-    const radius = 20 + Math.random() * 30;
+function initParticles() {
+  const colors = [
+    { r: 99, g: 102, b: 241 },
+    { r: 168, g: 85, b: 247 },
+    { r: 236, g: 72, b: 153 },
+    { r: 139, g: 92, b: 246 },
+    { r: 129, g: 140, b: 248 }
+  ];
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const radius = 150 + Math.random() * 250;
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos(2 * Math.random() - 1);
-    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-    positions[i * 3 + 2] = radius * Math.cos(phi);
-    const color = Math.random() > 0.5
-      ? color1.clone().lerp(color2, Math.random())
-      : color2.clone().lerp(color3, Math.random());
-    colors[i * 3] = color.r; colors[i * 3 + 1] = color.g; colors[i * 3 + 2] = color.b;
-    sizes[i] = 0.1 + Math.random() * 0.4;
+    const c = colors[Math.floor(Math.random() * colors.length)];
+    particles.push({
+      x: radius * Math.sin(phi) * Math.cos(theta),
+      y: radius * Math.sin(phi) * Math.sin(theta),
+      z: radius * Math.cos(phi),
+      r: c.r, g: c.g, b: c.b,
+      size: 1 + Math.random() * 2.5,
+      origX: 0, origY: 0, origZ: 0
+    });
+    // Store original positions for rotation
+    const p = particles[i];
+    p.origX = p.x;
+    p.origY = p.y;
+    p.origZ = p.z;
   }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-  const texCanvas = document.createElement('canvas');
-  texCanvas.width = 64; texCanvas.height = 64;
-  const ctx = texCanvas.getContext('2d');
-  const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grad.addColorStop(0, 'rgba(255,255,255,1)');
-  grad.addColorStop(0.3, 'rgba(255,255,255,0.8)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64);
-  const texture = new THREE.CanvasTexture(texCanvas);
-
-  const material = new THREE.PointsMaterial({
-    size: 0.25, map: texture, blending: THREE.AdditiveBlending,
-    depthWrite: false, transparent: true, vertexColors: true,
-    opacity: 0.8, sizeAttenuation: true
-  });
-  bgParticles = new THREE.Points(geometry, material);
-  scene.add(bgParticles);
-
-  // Layer 2: Tiny background dust (1500)
-  const count2 = 1500;
-  const pos2 = new Float32Array(count2 * 3);
-  for (let i = 0; i < count2; i++) {
-    pos2[i * 3] = (Math.random() - 0.5) * 80;
-    pos2[i * 3 + 1] = (Math.random() - 0.5) * 80;
-    pos2[i * 3 + 2] = (Math.random() - 0.5) * 40 - 10;
-  }
-  const geo2 = new THREE.BufferGeometry();
-  geo2.setAttribute('position', new THREE.BufferAttribute(pos2, 3));
-  const mat2 = new THREE.PointsMaterial({
-    size: 0.08, color: 0x6366f1, transparent: true, opacity: 0.25,
-    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
-  });
-  glowParticles = new THREE.Points(geo2, mat2);
-  scene.add(glowParticles);
 }
 
-// ===== CREATE POEM STARS =====
-function createPoemStars() {
-  const starColors = [0x6366f1, 0xa855f7, 0xec4899, 0xf59e0b, 0x34d399, 0x60a5fa, 0xf472b6, 0x818cf8];
+// ===== ROTATION STATE =====
+let rotX = 0, rotY = 0;
+let targetRotX = 0, targetRotY = 0;
+let camDist = 500;
+let targetCamDist = 500;
 
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function project3D(x, y, z) {
+  const fov = 500;
+  const scale = fov / (fov + z);
+  return {
+    sx: x * scale + W / 2,
+    sy: y * scale + H / 2,
+    scale: scale
+  };
+}
+
+function rotateX(y, z, angle) {
+  const cos = Math.cos(angle), sin = Math.sin(angle);
+  return { y: y * cos - z * sin, z: y * sin + z * cos };
+}
+
+function rotateY(x, z, angle) {
+  const cos = Math.cos(angle), sin = Math.sin(angle);
+  return { x: x * cos + z * sin, z: -x * sin + z * cos };
+}
+
+function drawParticles() {
+  // Sort by z for depth
+  const sorted = [];
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
+    let { y: ry, z: rz } = rotateX(p.origY, p.origZ, rotX);
+    let { x: rx, z: rzz } = rotateY(p.origX, rz, rotY);
+    sorted.push({ ...p, rx, ry, rz: rzz });
+  }
+  sorted.sort((a, b) => a.rz - b.rz);
+
+  for (const p of sorted) {
+    const { sx, sy, scale } = project3D(p.rx, p.ry, p.rz);
+    if (sx < -50 || sx > W + 50 || sy < -50 || sy > H + 50) continue;
+    const alpha = Math.max(0, Math.min(1, (p.rz + 400) / 800));
+    const size = p.size * scale * 1.5;
+    if (size < 0.3) continue;
+
+    const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, size);
+    grad.addColorStop(0, `rgba(${p.r},${p.g},${p.b},${alpha * 0.9})`);
+    grad.addColorStop(0.4, `rgba(${p.r},${p.g},${p.b},${alpha * 0.4})`);
+    grad.addColorStop(1, `rgba(${p.r},${p.g},${p.b},0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(sx, sy, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ===== POEM STARS (3D positions, projected to 2D) =====
+let poemStars = [];
+let selectedStarIdx = -1;
+
+function initPoemStars() {
+  const starColors = [
+    '#6366f1', '#a855f7', '#ec4899', '#f59e0b',
+    '#34d399', '#60a5fa', '#f472b6', '#818cf8'
+  ];
   POEMS.forEach((poem, i) => {
-    const radius = 10 + Math.random() * 12;
+    const radius = 120 + Math.random() * 150;
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos(2 * Math.random() - 1);
     const x = radius * Math.sin(phi) * Math.cos(theta);
     const y = radius * Math.sin(phi) * Math.sin(theta);
     const z = radius * Math.cos(phi);
-
-    const color = new THREE.Color(starColors[i % starColors.length]);
-
-    // Star sprite
-    const canvas = document.createElement('canvas');
-    canvas.width = 96; canvas.height = 96;
-    const ctx = canvas.getContext('2d');
-    const grad = ctx.createRadialGradient(48, 48, 0, 48, 48, 48);
-    grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.1, 'rgba(255,255,255,0.9)');
-    grad.addColorStop(0.3, 'rgba(255,255,255,0.4)');
-    grad.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.arc(48, 48, 48, 0, Math.PI * 2); ctx.fill();
-
-    const texture = new THREE.CanvasTexture(canvas);
-    const spriteMat = new THREE.SpriteMaterial({
-      map: texture, blending: THREE.AdditiveBlending,
-      depthWrite: false, transparent: true, opacity: 0.85,
-      color: color
-    });
-    const sprite = new THREE.Sprite(spriteMat);
-    const size = 0.7 + Math.random() * 0.5;
-    sprite.scale.set(size, size, 1);
-    sprite.position.set(x, y, z);
-    sprite.userData = {
-      poem, isPoemStar: true, baseSize: size,
+    poemStars.push({
+      origX: x, origY: y, origZ: z,
+      rx: 0, ry: 0, rz: 0,
+      sx: 0, sy: 0, sz: 0,
+      screenX: 0, screenY: 0,
+      scale: 1,
+      color: starColors[i % starColors.length],
+      poem: poem,
+      baseSize: 5 + Math.random() * 3,
       pulseOffset: Math.random() * Math.PI * 2,
-      hoverScale: 1
-    };
-    scene.add(sprite);
-    starMeshes.push(sprite);
+      hoverScale: 1,
+      isHovered: false
+    });
   });
 }
 
-// ===== ENTRY =====
+function updatePoemStars() {
+  for (const s of poemStars) {
+    let { y: ry, z: rz } = rotateX(s.origY, s.origZ, rotX);
+    let { x: rx, z: rzz } = rotateY(s.origX, rz, rotY);
+    s.rx = rx; s.ry = ry; s.rz = rzz;
+    const proj = project3D(rx, ry, rzz);
+    s.screenX = proj.sx;
+    s.screenY = proj.sy;
+    s.scale = proj.scale;
+    s.sz = rzz;
+  }
+}
+
+function drawPoemStars(time) {
+  // Sort by z
+  const sorted = [...poemStars].sort((a, b) => a.sz - b.sz);
+
+  for (const s of sorted) {
+    const { sx, sy, scale } = s;
+    if (sx < -50 || sx > W + 50 || sy < -50 || sy > H + 50) continue;
+    const alpha = Math.max(0.1, Math.min(1, (s.sz + 300) / 600));
+
+    const pulse = 0.85 + 0.15 * Math.sin(time * 0.002 + s.pulseOffset);
+    const hover = s.hoverScale || 1;
+    const size = s.baseSize * scale * pulse * hover;
+
+    // Glow
+    const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 3);
+    grad.addColorStop(0, s.color.replace(')', ',0.6)').replace('rgb', 'rgba'));
+    grad.addColorStop(0.5, s.color.replace(')', ',0.15)').replace('rgb', 'rgba'));
+    grad.addColorStop(1, s.color.replace(')', ',0)').replace('rgb', 'rgba'));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(sx, sy, size * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core
+    ctx.fillStyle = `rgba(255,255,255,${alpha * 0.9})`;
+    ctx.beginPath();
+    ctx.arc(sx, sy, size * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Color ring
+    ctx.fillStyle = s.color;
+    ctx.globalAlpha = alpha * 0.5;
+    ctx.beginPath();
+    ctx.arc(sx, sy, size * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Label
+    if (s.sz > -200) {
+      ctx.fillStyle = `rgba(255,255,255,${alpha * 0.4})`;
+      ctx.font = `${12 * scale}px "KaiTi", "STKaiti", serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(s.poem.title, sx, sy + size * 2.5 + 14 * scale);
+    }
+  }
+}
+
+// ===== HIT TEST =====
+function hitTest(mx, my) {
+  for (let i = poemStars.length - 1; i >= 0; i--) {
+    const s = poemStars[i];
+    if (s.sz < -250) continue;
+    const dx = mx - s.screenX;
+    const dy = my - s.screenY;
+    const size = s.baseSize * s.scale * (s.hoverScale || 1) * 3;
+    if (dx * dx + dy * dy < size * size) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+// ===== LANDING =====
+const landingOverlay = document.getElementById('landing-overlay');
+const universeUI = document.getElementById('universe-ui');
+const poemModal = document.getElementById('poem-modal');
+const toast = document.getElementById('toast');
+
 function enterUniverse() {
   if (isTransitioning || entered) return;
   isTransitioning = true;
@@ -210,37 +234,59 @@ function enterUniverse() {
 
 landingOverlay.addEventListener('dblclick', enterUniverse);
 
-// ===== CLICK STAR =====
-function onPointerDown(event) {
-  if (!entered || isTransitioning) return;
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(starMeshes);
-  if (intersects.length > 0 && intersects[0].object.userData.isPoemStar) {
-    autoRotate = false;
-    openPoem(intersects[0].object.userData.poem);
-  }
-}
+// ===== MOUSE / DRAG =====
+let isDragging = false;
+let prevMX = 0, prevMY = 0;
+let dragRotX = 0, dragRotY = 0;
 
-function onPointerMove(event) {
+canvas.addEventListener('mousedown', (e) => {
   if (!entered) return;
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(starMeshes);
-  renderer.domElement.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+  isDragging = true;
+  prevMX = e.clientX;
+  prevMY = e.clientY;
+  dragRotX = rotX;
+  dragRotY = rotY;
+  autoRotate = false;
+});
 
-  if (selectedStar && selectedStar !== (intersects.length > 0 ? intersects[0].object : null)) {
-    selectedStar.userData.hoverScale = 1;
+document.addEventListener('mousemove', (e) => {
+  mouseX = (e.clientX / W) * 2 - 1;
+  mouseY = -(e.clientY / H) * 2 + 1;
+
+  if (isDragging) {
+    const dx = e.clientX - prevMX;
+    const dy = e.clientY - prevMY;
+    targetRotY = dragRotY + dx * 0.005;
+    targetRotX = Math.max(-1.2, Math.min(1.2, dragRotX + dy * 0.005));
   }
-  if (intersects.length > 0) {
-    selectedStar = intersects[0].object;
-    selectedStar.userData.hoverScale = 2.2;
-  } else {
-    selectedStar = null;
+
+  // Hover
+  if (entered) {
+    const idx = hitTest(e.clientX, e.clientY);
+    canvas.style.cursor = idx >= 0 ? 'pointer' : 'default';
+    for (let i = 0; i < poemStars.length; i++) {
+      poemStars[i].hoverScale = (i === idx) ? 2.5 : 1;
+      poemStars[i].isHovered = i === idx;
+    }
+    selectedStarIdx = idx;
   }
-}
+});
+
+document.addEventListener('mouseup', () => { isDragging = false; });
+
+canvas.addEventListener('wheel', (e) => {
+  if (!entered) return;
+  targetCamDist = Math.max(200, Math.min(800, targetCamDist + e.deltaY * 0.3));
+});
+
+canvas.addEventListener('click', (e) => {
+  if (!entered || isTransitioning) return;
+  const idx = hitTest(e.clientX, e.clientY);
+  if (idx >= 0) {
+    autoRotate = false;
+    openPoem(poemStars[idx].poem);
+  }
+});
 
 // ===== POEM MODAL =====
 function openPoem(poem) {
@@ -269,8 +315,10 @@ document.getElementById('btnBack').addEventListener('click', () => {
   universeUI.classList.add('hidden');
   landingOverlay.style.display = 'flex';
   landingOverlay.classList.remove('fade-out');
-  targetTheta = 0; targetPhi = Math.PI / 3; targetDist = 35;
-  camTheta = 0; camPhi = Math.PI / 3; camDist = 35;
+  targetRotX = 0; targetRotY = 0;
+  rotX = 0; rotY = 0;
+  targetCamDist = 500;
+  camDist = 500;
   isTransitioning = false;
 });
 
@@ -278,54 +326,44 @@ document.getElementById('btnBack').addEventListener('click', () => {
 function showToast(msg) { toast.textContent = msg; toast.classList.remove('hidden'); toast.classList.add('show'); }
 function hideToast() { toast.classList.remove('show'); toast.classList.add('hidden'); }
 
-// ===== RESIZE =====
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+// ===== STAR COUNT =====
+const starCountEl = document.getElementById('starCount');
 
 // ===== ANIMATION LOOP =====
-function animate() {
+function animate(time) {
   requestAnimationFrame(animate);
-  const time = Date.now() * 0.001;
 
   // Auto rotate
   if (autoRotate && !isDragging) {
-    targetTheta += 0.002;
+    targetRotY += 0.002;
   }
 
-  // Mouse parallax on particles
-  if (bgParticles) {
-    bgParticles.rotation.x += (mouseY * 0.12 - bgParticles.rotation.x) * 0.02;
-    bgParticles.rotation.y += (mouseX * 0.12 - bgParticles.rotation.y) * 0.02;
-  }
-  if (glowParticles) {
-    glowParticles.rotation.y += 0.0003;
+  // Smooth rotation
+  rotX += (targetRotX - rotX) * 0.06;
+  rotY += (targetRotY - rotY) * 0.06;
+  camDist += (targetCamDist - camDist) * 0.06;
+
+  // Mouse parallax (subtle)
+  if (!isDragging && !autoRotate) {
+    // Already handled by drag
   }
 
-  // Pulse & hover stars
-  starMeshes.forEach(sprite => {
-    if (sprite.userData.isPoemStar) {
-      const pulse = 0.85 + 0.15 * Math.sin(time * 1.5 + sprite.userData.pulseOffset);
-      const hover = sprite.userData.hoverScale || 1;
-      const target = sprite.userData.baseSize * pulse * hover;
-      sprite.scale.x += (target - sprite.scale.x) * 0.1;
-      sprite.scale.y += (target - sprite.scale.y) * 0.1;
-      sprite.material.opacity = 0.5 + 0.35 * Math.sin(time * 1.2 + sprite.userData.pulseOffset);
-    }
-  });
+  // Clear
+  ctx.clearRect(0, 0, W, H);
 
-  updateCameraPosition();
-  renderer.render(scene, camera);
+  // Draw particles
+  drawParticles();
+
+  // Update and draw poem stars
+  updatePoemStars();
+  drawPoemStars(time);
+
+  // Star count
+  const discovered = parseInt(starCountEl.dataset.discovered || '0');
+  starCountEl.textContent = '✨ ' + discovered + ' / 30';
 }
 
 // ===== INIT =====
-initScene();
-createParticleUniverse();
-createPoemStars();
-
-renderer.domElement.addEventListener('click', onPointerDown);
-renderer.domElement.addEventListener('mousemove', onPointerMove);
-
-animate();
+initParticles();
+initPoemStars();
+animate(0);

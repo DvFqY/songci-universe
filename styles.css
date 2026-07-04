@@ -8,12 +8,12 @@ html, body {
 }
 .hidden { display: none !important; }
 
-#universe-container {
+#bgCanvas {
   position: fixed; inset: 0;
   width: 100vw; height: 100vh;
   z-index: 0;
+  display: block;
 }
-#universe-container canvas { display: block; }
 
 /* ===== LANDING ===== */
 #landing-overlay {
